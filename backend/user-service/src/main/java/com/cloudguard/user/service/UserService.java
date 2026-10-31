@@ -14,5 +14,7 @@ public interface UserService {
 
     void changePassword(
             String email,
-            ChangePasswordRequest request);
+            ChangePasswordRequest request,
+            String authorizationHeader
+    );
 }

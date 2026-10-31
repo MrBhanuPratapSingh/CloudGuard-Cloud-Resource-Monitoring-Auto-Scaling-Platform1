@@ -11,6 +11,10 @@ import com.cloudguard.user.dto.request.UpdateProfileRequest;
 import com.cloudguard.user.dto.response.UserProfileResponse;
 import com.cloudguard.user.entity.UserProfile;
 import com.cloudguard.user.repository.UserProfileRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.ResourceAccessException;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -18,6 +22,8 @@ public class UserServiceImpl implements UserService {
     private final UserProfileRepository userProfileRepository;
 
     private final RestClient restClient;
+    private static final Logger log =
+            LoggerFactory.getLogger(UserServiceImpl.class);
 
 
     public UserServiceImpl(
@@ -87,33 +93,43 @@ public class UserServiceImpl implements UserService {
     @Override
     public void changePassword(
             String email,
-            ChangePasswordRequest request) {
+            ChangePasswordRequest request,
+            String authorizationHeader) {
 
-        Map<String, String> body =
-                new HashMap<>();
+        Map<String, String> body = new HashMap<>();
 
         body.put("email", email);
+        body.put("currentPassword", request.getCurrentPassword());
+        body.put("newPassword", request.getNewPassword());
 
-        body.put(
-                "currentPassword",
-                request.getCurrentPassword()
-        );
+        try {
 
-        body.put(
-                "newPassword",
-                request.getNewPassword()
-        );
+            restClient.put()
+                    .uri("/api/auth/change-password")
+                    .header("Authorization", authorizationHeader)
+                    .body(body)
+                    .retrieve()
+                    .toBodilessEntity();
 
+            log.info("Password change request completed successfully");
 
-        // Call Auth Service
-        restClient
-                .put()
-                .uri("/api/auth/change-password")
-                .body(body)
-                .retrieve()
-                .toBodilessEntity();
+        } catch (RestClientResponseException ex) {
+
+            log.error(
+                    "Auth Service returned status: {}, response: {}",
+                    ex.getStatusCode(),
+                    ex.getResponseBodyAsString()
+            );
+
+            throw ex;
+
+        } catch (ResourceAccessException ex) {
+
+            log.error("Unable to connect to Auth Service", ex);
+
+            throw ex;
+        }
     }
-
 
     // ==========================================
     // CONVERT ENTITY TO RESPONSE

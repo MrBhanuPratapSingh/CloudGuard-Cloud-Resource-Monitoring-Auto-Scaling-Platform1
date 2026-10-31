@@ -8,6 +8,8 @@ import com.cloudguard.user.dto.request.ChangePasswordRequest;
 import com.cloudguard.user.dto.request.UpdateProfileRequest;
 import com.cloudguard.user.dto.response.UserProfileResponse;
 import com.cloudguard.user.service.UserService;
+import org.springframework.web.bind.annotation.RequestHeader;
+
 
 import jakarta.validation.Valid;
 
@@ -68,18 +70,17 @@ public class UserController {
     @PutMapping("/change-password")
     public ResponseEntity<String> changePassword(
             Authentication authentication,
-            @RequestBody ChangePasswordRequest request) {
+            @RequestHeader("Authorization") String authorizationHeader,
+            @Valid @RequestBody ChangePasswordRequest request) {
 
-        // Email comes from JWT
         String email = authentication.getName();
 
         userService.changePassword(
                 email,
-                request
+                request,
+                authorizationHeader
         );
 
-        return ResponseEntity.ok(
-                "Password changed successfully"
-        );
+        return ResponseEntity.ok("Password changed successfully");
     }
 }
